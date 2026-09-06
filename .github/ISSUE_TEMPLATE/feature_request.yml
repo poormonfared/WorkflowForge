@@ -1,0 +1,21 @@
+name: Feature request
+description: A new node type, output shape, or other capability
+labels: [enhancement]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What do you want to be able to do?
+    validations:
+      required: true
+
+  - type: input
+    id: node-type
+    attributes:
+      label: n8n node type (if this is about node support)
+      placeholder: "e.g. n8n-nodes-base.merge"
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why? What's the use case?

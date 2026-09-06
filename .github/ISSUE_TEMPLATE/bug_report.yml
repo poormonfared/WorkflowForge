@@ -1,0 +1,37 @@
+name: Bug report
+description: Something didn't parse, generate, or run correctly
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: workflow
+    attributes:
+      label: n8n workflow JSON (trimmed to reproduce)
+      description: Paste the smallest workflow export that reproduces the issue. Remove any credentials/secrets first.
+      render: json
+
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Where did it go wrong?
+      options:
+        - Upload / parsing
+        - Generation
+        - The generated project (doesn't build)
+        - The generated project (builds but behaves incorrectly)
+        - Something else
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: .NET SDK version
+      placeholder: "output of `dotnet --version`"

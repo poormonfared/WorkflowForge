@@ -1,0 +1,122 @@
+@page "/"
+@rendermode InteractiveServer
+@using WorkflowForge.Web.Services
+@inject TranspilerClient Transpiler
+@inject IJSRuntime JsRuntime
+
+<PageTitle>WorkflowForge</PageTitle>
+
+<h1>WorkflowForge</h1>
+<p>Upload an n8n workflow export, generate an owned C# project, and download it — no n8n runtime dependency at execution time.</p>
+
+<InputFile OnChange="OnFileSelectedAsync" accept=".json" />
+
+@if (_uploadResult is not null)
+{
+    <h2>1. Uploaded: @_uploadResult.WorkflowName</h2>
+    @if (_uploadResult.Diagnostics.Count > 0)
+    {
+        <ul>
+            @foreach (var diagnostic in _uploadResult.Diagnostics)
+            {
+                <li>@diagnostic</li>
+            }
+        </ul>
+    }
+
+    <button @onclick="GenerateAsync" disabled="@_isGenerating">Generate C# project</button>
+}
+
+@if (_generateResult is not null)
+{
+    <h2>2. Generated @_generateResult.FilePaths.Count file(s)</h2>
+    @if (_generateResult.Warnings.Count > 0)
+    {
+        <p><strong>Follow-up needed:</strong></p>
+        <ul>
+            @foreach (var warning in _generateResult.Warnings)
+            {
+                <li>@warning</li>
+            }
+        </ul>
+    }
+
+    <button @onclick="DownloadAsync" disabled="@_isDownloading">Download project (.zip)</button>
+}
+
+@if (_errorMessage is not null)
+{
+    <p style="color:red">@_errorMessage</p>
+}
+
+@code {
+    private UploadWorkflowResult? _uploadResult;
+    private GenerateProjectResult? _generateResult;
+    private string? _errorMessage;
+    private bool _isGenerating;
+    private bool _isDownloading;
+
+    private async Task OnFileSelectedAsync(InputFileChangeEventArgs e)
+    {
+        _errorMessage = null;
+        _uploadResult = null;
+        _generateResult = null;
+
+        try
+        {
+            await using var stream = e.File.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            _uploadResult = await Transpiler.UploadAsync(stream);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Upload failed: {ex.Message}";
+        }
+    }
+
+    private async Task GenerateAsync()
+    {
+        if (_uploadResult is null)
+        {
+            return;
+        }
+
+        _isGenerating = true;
+        _errorMessage = null;
+        try
+        {
+            _generateResult = await Transpiler.GenerateAsync(_uploadResult.WorkflowId);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Generation failed: {ex.Message}";
+        }
+        finally
+        {
+            _isGenerating = false;
+        }
+    }
+
+    private async Task DownloadAsync()
+    {
+        if (_uploadResult is null)
+        {
+            return;
+        }
+
+        _isDownloading = true;
+        _errorMessage = null;
+        try
+        {
+            var zipBytes = await Transpiler.DownloadAsync(_uploadResult.WorkflowId);
+            await JsRuntime.InvokeVoidAsync("workflowForge.downloadFile", $"{_uploadResult.WorkflowName}.zip", Convert.ToBase64String(zipBytes));
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Download failed: {ex.Message}";
+        }
+        finally
+        {
+            _isDownloading = false;
+        }
+    }
+}

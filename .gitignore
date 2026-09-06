@@ -1,0 +1,13 @@
+## .NET
+bin/
+obj/
+*.user
+
+## IDE
+.vs/
+.vscode/
+.idea/
+
+## Test results
+[Tt]est[Rr]esult*/
+*.trx
