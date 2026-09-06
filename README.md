@@ -1,13 +1,11 @@
 # WorkflowForge
 
-[![CI](https://github.com/OWNER/WorkflowForge/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/WorkflowForge/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/OWNER/WorkflowForge/actions/workflows/codeql.yml/badge.svg)](https://github.com/OWNER/WorkflowForge/actions/workflows/codeql.yml)
+[![CI](https://github.com/poormonfared/WorkflowForge/actions/workflows/ci.yml/badge.svg)](https://github.com/poormonfared/WorkflowForge/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/poormonfared/WorkflowForge/actions/workflows/codeql.yml/badge.svg)](https://github.com/poormonfared/WorkflowForge/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![.NET](https://img.shields.io/badge/.NET-10-512BD4)
 
 WorkflowForge transpiles n8n workflow JSON exports into an **owned, runnable C# project** — no n8n runtime dependency at execution time. Upload a workflow, get back a real `dotnet build`-able Minimal API / Worker Service / Console project you check into your own repo.
-
-> Replace `OWNER` in the badge URLs above once this repo has a GitHub remote.
 
 ## Why
 
