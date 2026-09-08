@@ -7,6 +7,10 @@
 
 WorkflowForge transpiles n8n workflow JSON exports into an **owned, runnable C# project** — no n8n runtime dependency at execution time. Upload a workflow, get back a real `dotnet build`-able Minimal API / Worker Service / Console project you check into your own repo.
 
+## About
+
+![WorkflowForge](WorkflowForge.png)
+
 ## Why
 
 Point-and-click workflow tools are great for prototyping, but running them in production means depending on their runtime forever. WorkflowForge converts the workflow *once* into idiomatic, human-readable C# — after that, it's just your code.
