@@ -1,3 +1,4 @@
+using MudBlazor.Services;
 using WorkflowForge.Web.Components;
 using WorkflowForge.Web.Services;
 
@@ -7,8 +8,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddMudServices();
+
 // Calls through WorkflowForge.Gateway server-side — the gateway is never exposed to the browser.
-builder.Services.AddHttpClient<TranspilerClient>(client =>
+builder.Services.AddHttpClient<ITranspilerClient, TranspilerClient>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["ApiSettings:GatewayAddress"]!);
 });
