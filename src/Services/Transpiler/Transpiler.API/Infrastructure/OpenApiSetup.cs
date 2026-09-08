@@ -5,10 +5,8 @@ namespace Transpiler.API.Infrastructure;
 
 public static class OpenApiSetup
 {
-    public static WebApplicationBuilder AddTranspilerOpenApi(this WebApplicationBuilder builder)
+    public static WebApplicationBuilder AddTranspilerOpenApi(this WebApplicationBuilder builder, string gatewayRoutePrefix)
     {
-        var gatewayRoutePrefix = builder.Configuration["Gateway:RoutePrefix"]!;
-
         builder.Services.AddOpenApi(options =>
         {
             // Relative to wherever the document itself was fetched from — through the gateway that's
@@ -24,9 +22,8 @@ public static class OpenApiSetup
         return builder;
     }
 
-    public static WebApplication MapTranspilerOpenApi(this WebApplication app)
+    public static WebApplication MapTranspilerOpenApi(this WebApplication app, string gatewayRoutePrefix)
     {
-        var gatewayRoutePrefix = app.Configuration["Gateway:RoutePrefix"]!;
         var openApiRoutePattern = $"{gatewayRoutePrefix}/openapi/{{documentName}}.json";
 
         // Mounted at the gateway-facing path (not /openapi, /scalar) — WorkflowForge.Gateway forwards
