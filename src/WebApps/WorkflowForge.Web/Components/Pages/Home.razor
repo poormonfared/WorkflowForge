@@ -1,75 +1,127 @@
 @page "/"
 @rendermode InteractiveServer
 @using WorkflowForge.Web.Services
-@inject TranspilerClient Transpiler
+@inject ITranspilerClient Transpiler
 @inject IJSRuntime JsRuntime
+@inject ISnackbar Snackbar
 
 <PageTitle>WorkflowForge</PageTitle>
 
-<h1>WorkflowForge</h1>
-<p>Upload an n8n workflow export, generate an owned C# project, and download it — no n8n runtime dependency at execution time.</p>
+<MudText Typo="Typo.h4" GutterBottom="true">WorkflowForge</MudText>
+<MudText Typo="Typo.body1" Class="mb-6">
+    Upload an n8n workflow export, generate an owned C# project, and download it — no n8n runtime dependency at execution time.
+</MudText>
 
-<InputFile OnChange="OnFileSelectedAsync" accept=".json" />
+<MudPaper Class="pa-4 mb-4" Elevation="2">
+    <MudText Typo="Typo.h6" GutterBottom="true">1. Upload workflow</MudText>
+
+    <MudFileUpload T="IBrowserFile" Accept=".json" OnFilesChanged="OnFileSelectedAsync" MaxFileSize="10485760" Disabled="@_isUploading">
+        <CustomContent>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.UploadFile" Disabled="@_isUploading">
+                @(_isUploading ? "Uploading…" : "Choose file")
+            </MudButton>
+        </CustomContent>
+    </MudFileUpload>
+
+    @if (_isUploading)
+    {
+        <MudProgressLinear Indeterminate="true" Class="mt-3" Color="Color.Primary" />
+    }
+
+    @if (_uploadResult is not null)
+    {
+        <MudAlert Severity="Severity.Success" Class="mt-4" Dense="true">
+            Uploaded <strong>@_uploadResult.WorkflowName</strong>
+        </MudAlert>
+
+        @if (_uploadResult.Diagnostics.Count > 0)
+        {
+            <MudList T="string" Dense="true" Class="mt-2">
+                @foreach (var diagnostic in _uploadResult.Diagnostics)
+                {
+                    <MudListItem Icon="@Icons.Material.Filled.Info">@diagnostic</MudListItem>
+                }
+            </MudList>
+        }
+    }
+</MudPaper>
 
 @if (_uploadResult is not null)
 {
-    <h2>1. Uploaded: @_uploadResult.WorkflowName</h2>
-    @if (_uploadResult.Diagnostics.Count > 0)
-    {
-        <ul>
-            @foreach (var diagnostic in _uploadResult.Diagnostics)
-            {
-                <li>@diagnostic</li>
-            }
-        </ul>
-    }
+    <MudPaper Class="pa-4 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6" GutterBottom="true">2. Generate C# project</MudText>
 
-    <button @onclick="GenerateAsync" disabled="@_isGenerating">Generate C# project</button>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="GenerateAsync" Disabled="@_isGenerating" StartIcon="@Icons.Material.Filled.Build">
+            @(_isGenerating ? "Generating…" : "Generate C# project")
+        </MudButton>
+
+        @if (_isGenerating)
+        {
+            <MudProgressLinear Indeterminate="true" Class="mt-3" Color="Color.Primary" />
+        }
+
+        @if (_generateResult is not null)
+        {
+            <MudAlert Severity="Severity.Success" Class="mt-4" Dense="true">
+                Generated @_generateResult.FilePaths.Count file(s)
+            </MudAlert>
+
+            @if (_generateResult.Warnings.Count > 0)
+            {
+                <MudText Typo="Typo.subtitle2" Class="mt-3">Follow-up needed:</MudText>
+                <MudList T="string" Dense="true">
+                    @foreach (var warning in _generateResult.Warnings)
+                    {
+                        <MudListItem Icon="@Icons.Material.Filled.Warning" IconColor="Color.Warning">@warning</MudListItem>
+                    }
+                </MudList>
+            }
+        }
+    </MudPaper>
 }
 
 @if (_generateResult is not null)
 {
-    <h2>2. Generated @_generateResult.FilePaths.Count file(s)</h2>
-    @if (_generateResult.Warnings.Count > 0)
-    {
-        <p><strong>Follow-up needed:</strong></p>
-        <ul>
-            @foreach (var warning in _generateResult.Warnings)
-            {
-                <li>@warning</li>
-            }
-        </ul>
-    }
+    <MudPaper Class="pa-4 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6" GutterBottom="true">3. Download project</MudText>
 
-    <button @onclick="DownloadAsync" disabled="@_isDownloading">Download project (.zip)</button>
-}
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="DownloadAsync" Disabled="@_isDownloading" StartIcon="@Icons.Material.Filled.Download">
+            @(_isDownloading ? "Preparing…" : "Download project (.zip)")
+        </MudButton>
 
-@if (_errorMessage is not null)
-{
-    <p style="color:red">@_errorMessage</p>
+        @if (_isDownloading)
+        {
+            <MudProgressLinear Indeterminate="true" Class="mt-3" Color="Color.Primary" />
+        }
+    </MudPaper>
 }
 
 @code {
     private UploadWorkflowResult? _uploadResult;
     private GenerateProjectResult? _generateResult;
-    private string? _errorMessage;
+    private bool _isUploading;
     private bool _isGenerating;
     private bool _isDownloading;
 
     private async Task OnFileSelectedAsync(InputFileChangeEventArgs e)
     {
-        _errorMessage = null;
         _uploadResult = null;
         _generateResult = null;
+        _isUploading = true;
 
         try
         {
             await using var stream = e.File.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
             _uploadResult = await Transpiler.UploadAsync(stream);
+            Snackbar.Add($"Uploaded '{_uploadResult.WorkflowName}'.", Severity.Success);
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Upload failed: {ex.Message}";
+            Snackbar.Add($"Upload failed: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isUploading = false;
         }
     }
 
@@ -81,14 +133,14 @@
         }
 
         _isGenerating = true;
-        _errorMessage = null;
         try
         {
             _generateResult = await Transpiler.GenerateAsync(_uploadResult.WorkflowId);
+            Snackbar.Add($"Generated {_generateResult.FilePaths.Count} file(s).", Severity.Success);
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Generation failed: {ex.Message}";
+            Snackbar.Add($"Generation failed: {ex.Message}", Severity.Error);
         }
         finally
         {
@@ -104,15 +156,15 @@
         }
 
         _isDownloading = true;
-        _errorMessage = null;
         try
         {
             var zipBytes = await Transpiler.DownloadAsync(_uploadResult.WorkflowId);
             await JsRuntime.InvokeVoidAsync("workflowForge.downloadFile", $"{_uploadResult.WorkflowName}.zip", Convert.ToBase64String(zipBytes));
+            Snackbar.Add("Download ready.", Severity.Success);
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Download failed: {ex.Message}";
+            Snackbar.Add($"Download failed: {ex.Message}", Severity.Error);
         }
         finally
         {
