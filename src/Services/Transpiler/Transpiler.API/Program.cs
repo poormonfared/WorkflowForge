@@ -10,6 +10,9 @@ using Transpiler.Core;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var gatewayRoutePrefix = builder.Configuration["Gateway:RoutePrefix"]!;
+var openApiRoutePattern = $"{gatewayRoutePrefix}/openapi/{{documentName}}.json";
+
 builder.Services.AddCarter();
 builder.Services.AddOpenApi(options =>
 {
@@ -18,7 +21,7 @@ builder.Services.AddOpenApi(options =>
     // of going straight to this API's own address.
     options.AddDocumentTransformer((document, _, _) =>
     {
-        document.Servers = [new Microsoft.OpenApi.OpenApiServer { Url = "/transpiler-service" }];
+        document.Servers = [new Microsoft.OpenApi.OpenApiServer { Url = gatewayRoutePrefix }];
         return Task.CompletedTask;
     });
 });
@@ -52,11 +55,11 @@ app.UseExceptionHandler();
 // /transpiler-service/{scalar,openapi}/* here unchanged, and Scalar's generated links need to
 // match what the browser actually sees through the gateway. Transpiler.API isn't meant to be
 // browsed to directly.
-app.MapOpenApi("/transpiler-service/openapi/{documentName}.json");
-app.MapScalarApiReference("/transpiler-service/scalar", options =>
+app.MapOpenApi(openApiRoutePattern);
+app.MapScalarApiReference($"{gatewayRoutePrefix}/scalar", options =>
 {
     options.WithTitle("Transpiler API");
-    options.WithOpenApiRoutePattern("/transpiler-service/openapi/{documentName}.json");
+    options.WithOpenApiRoutePattern(openApiRoutePattern);
 });
 
 app.MapCarter();
