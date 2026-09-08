@@ -17,6 +17,7 @@ builder.Services.AddRateLimiter(options =>
 var app = builder.Build();
 
 app.UseRateLimiter();
+app.MapGet("/", () => Results.Redirect("/transpiler-service/scalar"));
 app.MapReverseProxy();
 
 app.Run();
