@@ -9,7 +9,10 @@ using Transpiler.Core;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var gatewayRoutePrefix = builder.Configuration["Gateway:RoutePrefix"]!;
+
 builder.Services.AddCarter();
+builder.AddTranspilerOpenApi(gatewayRoutePrefix);
 
 builder.Services.AddMediatR(config =>
 {
@@ -35,6 +38,7 @@ builder.Services.AddProblemDetails();
 var app = builder.Build();
 
 app.UseExceptionHandler();
+app.MapTranspilerOpenApi(gatewayRoutePrefix);
 app.MapCarter();
 
 app.Run();

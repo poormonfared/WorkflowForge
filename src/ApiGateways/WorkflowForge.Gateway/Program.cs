@@ -16,7 +16,10 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 
+var docsUrl = builder.Configuration["Gateway:DocsUrl"]!;
+
 app.UseRateLimiter();
+app.MapGet("/", () => Results.Redirect(docsUrl));
 app.MapReverseProxy();
 
 app.Run();
