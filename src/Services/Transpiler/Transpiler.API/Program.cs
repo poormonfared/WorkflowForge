@@ -2,6 +2,7 @@ using BuildingBlocks.Behaviors;
 using BuildingBlocks.Exceptions.Handler;
 using Carter;
 using FluentValidation;
+using Scalar.AspNetCore;
 using Transpiler.Adapters.N8n;
 using Transpiler.API.Infrastructure;
 using Transpiler.CodeGen.CSharp;
@@ -10,6 +11,17 @@ using Transpiler.Core;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCarter();
+builder.Services.AddOpenApi(options =>
+{
+    // Relative to wherever the document itself was fetched from — through the gateway that's
+    // /transpiler-service/..., so "Try it" requests stay routed through the gateway too instead
+    // of going straight to this API's own address.
+    options.AddDocumentTransformer((document, _, _) =>
+    {
+        document.Servers = [new Microsoft.OpenApi.OpenApiServer { Url = "/transpiler-service" }];
+        return Task.CompletedTask;
+    });
+});
 
 builder.Services.AddMediatR(config =>
 {
@@ -35,6 +47,18 @@ builder.Services.AddProblemDetails();
 var app = builder.Build();
 
 app.UseExceptionHandler();
+
+// Mounted at the gateway-facing path (not /openapi, /scalar) — WorkflowForge.Gateway forwards
+// /transpiler-service/{scalar,openapi}/* here unchanged, and Scalar's generated links need to
+// match what the browser actually sees through the gateway. Transpiler.API isn't meant to be
+// browsed to directly.
+app.MapOpenApi("/transpiler-service/openapi/{documentName}.json");
+app.MapScalarApiReference("/transpiler-service/scalar", options =>
+{
+    options.WithTitle("Transpiler API");
+    options.WithOpenApiRoutePattern("/transpiler-service/openapi/{documentName}.json");
+});
+
 app.MapCarter();
 
 app.Run();
